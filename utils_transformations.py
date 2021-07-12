@@ -14,7 +14,7 @@ from scipy.ndimage import map_coordinates
 
 
 
-def translate(image:torch.Tensor,u,v)-> torch.Tensor:
+def translate(image,u,v):
     points = image.nonzero()
     for point in points:
         if point[1] + u >28:
@@ -26,8 +26,8 @@ def translate(image:torch.Tensor,u,v)-> torch.Tensor:
 
 
 
+"""
 def rotate2(image, d):
-    """Rotate the image by d/180 degrees."""
     d = torch.tensor(d)
     center = 0.5*torch.tensor(image.shape)
     rot = torch.tensor([[torch.cos(d), torch.sin(d)],[-torch.sin(d), torch.cos(d)]])
@@ -44,7 +44,6 @@ def rotate2(image, d):
 
 
 def rotate(image, d):
-    """Rotate the image by d/180 degrees."""
     image.numpy()
     center = 0.5*np.array(image.shape)
     rot = np.array([[np.cos(d), np.sin(d)],[-np.sin(d), np.cos(d)]])
@@ -61,11 +60,11 @@ def rotate(image, d):
 
 
 def skew(image):
-    """Skew the image provided.
+    Skew the image provided.
 
     Taken from StackOverflow:
     http://stackoverflow.com/a/33088550/4855984
-    """
+    
     image.numpy()
     image = image.reshape(28, 28)
     h, l = image.shape
@@ -79,40 +78,57 @@ def skew(image):
         image, mapping, (h, l), order=5, mode='nearest')
 
 
+"""
 
-def elastic_transform(image, alpha=36, sigma=5, random_state=None):
-    """Elastic deformation of images as described in [Simard2003]_.
-    .. [Simard2003] Simard, Steinkraus and Platt, "Best Practices for
-       Convolutional Neural Networks applied to Visual Document Analysis", in
-       Proc. of the International Conference on Document Analysis and
-       Recognition, 2003.
+
+def elastic_transformation(image, alpha, sigma):
     
-    :param image: a 28x28 image
-    :param alpha: scale for filter
-    :param sigma: the standard deviation for the gaussian
-    :return: distorted 28x28 image
-    """
-    image.numpy()
-    assert len(image.shape) == 2
+    dx = gaussian_filter(np.random.uniform(high =1, low = -1, size=image.shape[0]), sigma, mode = 'constant', cval = 0)* alpha
+    dy = gaussian_filter(np.random.uniform(high =1, low = -1, size=image.shape[1]), sigma, mode = 'constant', cval = 0)* alpha
 
-    if random_state is None:
-        random_state = np.random.RandomState(None)
+    x, y = np.meshgrid(np.arange(image.shape[0]), np.arange(image.shape[1]), indexing='ij')
+    indices = np.reshape(x + dx, (-1, 1) ), np.reshape(y + dy, (-1, 1))
+    image = torch.from_numpy(map_coordinates(image, indices, order=1).reshape(image.shape))
+    return image
 
-    shape = image.shape
-
-    dx = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma, mode="constant", cval=0) * alpha
-    dy = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma, mode="constant", cval=0) * alpha
-
-    x, y = np.meshgrid(np.arange(shape[0]), np.arange(shape[1]), indexing='ij')
-    indices = np.reshape(x+dx, (-1, 1)), np.reshape(y+dy, (-1, 1))
+def translate2(image, u, v):
     
-    return map_coordinates(image, indices, order=1).reshape(shape)
+    #dx = gaussian_filter(np.random.uniform(high =1, low = -1, size=image.shape[0]), sigma, mode = 'constant', cval = 0)* alpha
+    #dy = gaussian_filter(np.random.uniform(high =1, low = -1, size=image.shape[1]), sigma, mode = 'constant', cval = 0)* alpha
+
+    x, y = np.meshgrid(np.arange(image.shape[0]), np.arange(image.shape[1]), indexing='ij')
+    indices = np.reshape(x + u*np.ones(image.shape[0]), (-1, 1) ), np.reshape(y + v*np.ones(image.shape[1]), (-1, 1))
+    image = torch.from_numpy(map_coordinates(image, indices, order=1).reshape(image.shape))
+    return image
+
+
+def average_distance(image,samples, network, transformation, alpha, sigma, normalization = 1):
+    s = 0
+    feat_image = network(image.unsqueeze(0))
+    for k in range(samples):
+        image_deform = transformation(image.squeeze(0), alpha, sigma).unsqueeze(0)
+        s += (feat_image - network(image_deform.unsqueeze(0))).norm()
+    return s/(samples*normalization)
+
+
+def average_distance_numpy(image, samples, network, transformation, alpha, sigma, normalization = 1):
+    s = 0
+    feat_image = network(image)
+    for k in range(samples):
+        image_deform= transformation(image, alpha, sigma)
+        image_deform = image_deform.numpy()
+        s+= np.linalg.norm((feat_image - network(image_deform)))
+    return s/(samples*normalization)
 
 
 
-
-
-
+def average_distance_images(image, images_comparison ,network):
+    s = 0
+    feat_image = network(image.unsqueeze(0))
+    for k in range(len(images_comparison)):
+        s += (feat_image - network(images_comparison[k].unsqueeze(0))).norm()
+    return s/(len(images_comparison))
+    
 
 
 

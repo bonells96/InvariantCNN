@@ -9,11 +9,8 @@ import random
 import torch
 import torchvision
 import torchvision.datasets as datasets
-from torchvision import datasets, transforms
 
-import matplotlib.pyplot as plt
 
-import utils_transformations
 
 random.seed(15)
 
@@ -21,16 +18,14 @@ random.seed(15)
 #########################################Load Mnist DataSet#####################################################
 #We load 2 instances of the class datasets that will be two tensors
 
-mnist_trainset = datasets.MNIST(root='./data', train=True, download=True, transform=transforms.ToTensor())
-mnist_testset = datasets.MNIST(root='./data', train=False, download=True, transform=transforms.ToTensor())
-################################################################################################################
+##########################################################################################################
 
 def Data_Loaders(train_set, test_set, num_samples_train, num_samples_test):
-    indices_train_set = torch.randperm(len(mnist_trainset))[:num_samples_train]
-    indices_test_set = torch.randperm(len(mnist_testset))[:num_samples_test]
+    indices_train_set = torch.randperm(len(train_set))[:num_samples_train]
+    indices_test_set = torch.randperm(len(test_set))[:num_samples_test]
 
-    train_dataset = torch.utils.data.Subset(mnist_trainset, indices_train_set)
-    test_dataset =  torch.utils.data.Subset(mnist_testset, indices_test_set)
+    train_dataset = torch.utils.data.Subset(train_set, indices_train_set)
+    test_dataset =  torch.utils.data.Subset(test_set, indices_test_set)
     return train_dataset, test_dataset
 
 ################################################################################################################

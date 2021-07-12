@@ -13,6 +13,9 @@ from scipy.ndimage import gaussian_filter
 import numpy as np
 import itertools
 
+from utils_transformations import average_distance
+from utils_transformations import elastic_transformation
+
 ########################################################################
 
 def plot_function(x, y, title, label):
@@ -49,7 +52,18 @@ def plot_3_functions(x, y1, y2, y3, title, label1, label2, label3):
     ax.set_xlabel('X axis', fontsize = 16)
     ax.set_ylabel('Y axis', fontsize = 16)
     plt.show()
-    
+########################################################################
+def plot_3_functions_log(x, y1, y2, y3, title, label1, label2, label3):
+    fig, ax = plt.subplots(figsize=(10,8))
+    ax.plot(x, y1, color = 'blue', label =  label1)
+    ax.plot(x, y2, color = 'red', label = label2)
+    ax.plot(x, y3, color = 'green', label = label3)
+    ax.set_yscale('symlog')
+    ax.legend()
+    ax.set_title(title, fontsize = 16)
+    ax.set_xlabel('Frequency', fontsize = 16)
+    ax.set_ylabel('Amplitude (logscale)', fontsize = 16)
+    plt.show()
 ########################################################################
 
 def plot_images(images):
@@ -156,4 +170,18 @@ def Plot_conf_matrix(conf_matrix, target_names, title, accuracy):
     plt.xlabel('Predicted label\naccuracy={:0.4f}; misclass={:0.4f}'.format(accuracy, misclass))
     plt.show()
 
+    
+def plot_deformations_elastic(model, image):
+    alpha_vec = np.linspace(0, 20, 200)
+    distances = np.zeros(alpha_vec.size)
+    k=0
+    for alpha in alpha_vec:
+        distances[k] = average_distance(image, 50, model, elastic_transformation, alpha, 8)
+        k+=1
+    plot_function(alpha_vec, distances, 'Plot', 'distance')
+    
+    
+    
+
+    
     
